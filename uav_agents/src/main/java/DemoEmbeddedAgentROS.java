@@ -19,19 +19,15 @@ public class DemoEmbeddedAgentROS extends EmbeddedAgent {
 
 	@Override
 	protected void setupSensors() {
-	
 		
-               /*
-               //Testing topic-belief conversion. Uncomment and verify Jason mind inspector to check it out.
                
-               addTopic("turtle1/cmd_vel", "geometry_msgs/Twist");
-               addTopic("turtle1/color_sensor", "turtlesim/Color");
-               addTopic("turtle1/pose", "turtlesim/Pose");
-               */
+		/* Setting topic-belief conversion. The first parameter is the topic name; the second is the topic type (can be cheched using "rostopic info" command) */
+		//addTopic("uav1/mavros/state", "mavros_msgs/State");
+        addTopic("uav1/odometry/gps_local_odom", "nav_msgs/Odometry");
                
-               /* roscore1 is a connection with a ros master. Instantiate new DefaultRos4EmbeddedMas connect the agent with more ros masters*/
+		/* roscore1 is a connection with a ros master. Instantiate new DefaultRos4EmbeddedMas connect the agent with more ros masters*/
 		DefaultRos4EmbeddedMas roscore1 = new DefaultRos4EmbeddedMas("ws://localhost:9090",nodes, topics);		
-   	        MyRosMaster rosMaster = new MyRosMaster(new Atom("roscore1"), roscore1);
+   	    MyRosMaster rosMaster = new MyRosMaster(new Atom("roscore1"), roscore1);
 		this.addSensor(rosMaster);
 		
 	}

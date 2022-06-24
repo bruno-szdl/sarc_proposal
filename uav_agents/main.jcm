@@ -14,11 +14,17 @@
 
 mas perception_action {
 
-    agent sample_agent{
-      ag-class: DemoEmbeddedAgentROS
-      ag-arch: DemoEmbeddedAgentArch
+    // agent sample_agent{
+    //   ag-class: DemoEmbeddedAgentROS
+    //   ag-arch: DemoEmbeddedAgentArch
+    // }
+    agent uav1 : uav.asl {
+        beliefs: my_number(1)
+                my_number_string("1")
+                my_frame_id("uav1/gps_origin")
+
+        ag-class: DemoEmbeddedAgentROS
+        ag-arch: DemoEmbeddedAgentArch
     }
-
-
 
 }
