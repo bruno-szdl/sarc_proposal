@@ -8,6 +8,8 @@ std_altitude(20.0).
 +!start
     <- .print("Started!");
     !calculate_area.
+    !calculate_waypoints.
+    !generate_trajectory.
 
 +!calculate_area
     :   my_number(N)

@@ -8,6 +8,11 @@ import jason.asSyntax.Term;
 import jason.asSyntax.ListTerm;
 import static jason.asSyntax.ASSyntax.parseList;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 public class MyRosMaster extends RosMaster {
 
 	public MyRosMaster(Atom id, DefaultRos4EmbeddedMas microcontroller) {
@@ -83,7 +88,7 @@ public class MyRosMaster extends RosMaster {
 
 		}
 
-		else if(actionName.equals("generate_trajectory")){ 
+		if(actionName.equals("generate_trajectory")){ 
 
 			//indices dos parâmetros no vetor args:
 			int indexParamSeq = 1, indexParamSecs = 2, indexParamNSecs = 3, indexParamFrame_Id = 4,
@@ -195,35 +200,68 @@ public class MyRosMaster extends RosMaster {
 			
 		}
 
-		else if(actionName.equals("goto_trajectory_start")){ //handling the action "move_turtle"
+		if(actionName.equals("goto_trajectory_start")){ //handling the action "move_turtle"
 
-			ServiceParameters p = new ServiceParameters(); //p is the set of parameters of the requested service
-			serviceRequest("/uav"+args[0]+"/control_manager/goto_trajectory_start", p);
-			return true;
-
-		}
-
-		else if(actionName.equals("start_trajectory_tracking")){ //handling the action "move_turtle"
-
-			ServiceParameters p = new ServiceParameters(); //p is the set of parameters of the requested service
-			serviceRequest("/uav"+args[0]+"/control_manager/start_trajectory_tracking", p);
-			return true;
+			try{		    
+		    	JsonNode params = new ObjectMapper().readTree("{}"); //build a JSON with the service parameters		    
+		    	((DefaultRos4EmbeddedMas) microcontroller).serviceRequest("/uav"+args[0]+"/control_manager/goto_trajectory_start", params); //send the service request		   
+		   	} catch (JsonMappingException e) {
+				e.printStackTrace();
+		   	} catch (JsonProcessingException e) {
+				e.printStackTrace();
+		   	}
 
 		}
 
-		else if(actionName.equals("stop_trajectory_tracking")){ //handling the action "move_turtle"
+		if(actionName.equals("start_trajectory_tracking")){ //handling the action "move_turtle"
 
-			ServiceParameters p = new ServiceParameters(); //p is the set of parameters of the requested service
-			serviceRequest("/uav"+args[0]+"/control_manager/stop_trajectory_tracking", p);
-			return true;
+			try{		    
+				JsonNode params = new ObjectMapper().readTree("{}"); //build a JSON with the service parameters		    
+				((DefaultRos4EmbeddedMas) microcontroller).serviceRequest("/uav"+args[0]+"/control_manager/start_trajectory_tracking", params); //send the service request		   
+		   	} catch (JsonMappingException e) {
+				e.printStackTrace();
+		   	} catch (JsonProcessingException e) {
+				e.printStackTrace();
+		   	}
 
 		}
 
-		else if(actionName.equals("resume_trajectory_tracking")){ //handling the action "move_turtle"
+		if(actionName.equals("stop_trajectory_tracking")){ //handling the action "move_turtle"
 
-			ServiceParameters p = new ServiceParameters(); //p is the set of parameters of the requested service
-			serviceRequest("/uav"+args[0]+"/control_manager/resume_trajectory_tracking", p);
-			return true;
+			try{		    
+				JsonNode params = new ObjectMapper().readTree("{}"); //build a JSON with the service parameters		    
+				((DefaultRos4EmbeddedMas) microcontroller).serviceRequest("/uav"+args[0]+"/control_manager/stop_trajectory_tracking", params); //send the service request		   
+		   	} catch (JsonMappingException e) {
+				e.printStackTrace();
+		   	} catch (JsonProcessingException e) {
+				e.printStackTrace();
+		   	}
+
+		}
+
+		if(actionName.equals("resume_trajectory_tracking")){ //handling the action "move_turtle"
+
+			try{		    
+				JsonNode params = new ObjectMapper().readTree("{}"); //build a JSON with the service parameters		    
+				((DefaultRos4EmbeddedMas) microcontroller).serviceRequest("/uav"+args[0]+"/control_manager/resume_trajectory_tracking", params); //send the service request		   
+		   	} catch (JsonMappingException e) {
+				e.printStackTrace();
+		   	} catch (JsonProcessingException e) {
+				e.printStackTrace();
+		   	}
+
+		}
+
+		if(actionName.equals("land")){ //handling the action "move_turtle"
+
+			try{		    
+				JsonNode params = new ObjectMapper().readTree("{}"); //build a JSON with the service parameters		    
+				((DefaultRos4EmbeddedMas) microcontroller).serviceRequest("/uav"+args[0]+"/uav_manager/land", params); //send the service request		   
+		   	} catch (JsonMappingException e) {
+				e.printStackTrace();
+		   	} catch (JsonProcessingException e) {
+				e.printStackTrace();
+		   	}
 
 		}
 
