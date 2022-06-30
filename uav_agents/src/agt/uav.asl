@@ -1,238 +1,226 @@
-//initial beliefs
-my_number_string("1").
+//////////////// Initial beliefs
+status("None").
 world_area(250, 250, 0, 0).
-num_of_uavs(4).
-camera_range(10).
+num_of_uavs(6).
+camera_range(50).
 std_altitude(20.0).
 std_heading(0.0).
-input_id(0).
-use_heading(false).
-fly_now(false).
-stop_at_waypoints(false).
-loop(false).
-over_constraints(false).
-over_max_velocity_hor(0.0).
-over_max_acceleration_hor(0.0).
-over_max_jerk_hor(0.0).
-over_max_velocity_ver(0.0).
-over_max_acceleration_ver(0.0).
-over_max_jerk_ver(0.0).
-relax_heading(false).
-land_position(0.0, 0.0).
+land_point(-102.0, -111.0).
+land_radius(10.0).
+diff(2).
 
-//rules
-current_pos(CX, CY, CZ) :- uav1_odometry_odom_gps(header(seq(_),stamp(secs(_),nsecs(_)),frame_id(_)),child_frame_id(_),pose(pose(position(x(CX),y(CY),z(CZ)),orientation(x(_),y((_)),z((_)),w((_)))),covariance(_)),twist(twist(linear(x(_),y(_),z((_))),angular(x(_),y((_)),z((_)))),covariance(_))).
-current_header(Seq, Secs, Nsecs) :- uav1_odometry_odom_gps(header(seq(Seq),stamp(secs(Secs),nsecs(Nsecs)),frame_id(_)),child_frame_id(_),pose(pose(position(x(_),y(_),z(_)),orientation(x(_),y((_)),z((_)),w((_)))),covariance(_)),twist(twist(linear(x(_),y(_),z((_))),angular(x(_),y((_)),z((_)))),covariance(_))).
 
-//initial goals
+//////////////// Rules
+current_position(CX, CY, CZ) :- uav1_odometry_gps_local_odom(header(seq(Seq),stamp(secs(Secs),nsecs(Nsecs)),frame_id(Frame_id)),child_frame_id(CFI),pose(pose(position(x(CX),y(CY),z(CZ)),orientation(x(OX),y((OY)),z((OZ)),w((OW)))),covariance(CV)),twist(twist(linear(x(LX),y(LY),z((LZ))),angular(x(AX),y((AY)),z((AZ)))),covariance(CV2))).
+near(X, Y) :- current_position(CX, CY, CZ)
+              & diff(D)
+              & math.abs(CX - X) <= D
+              & math.abs(CY - Y) <= D.
+my_number_string(S) :- my_number(N)
+                       & .term2string(N, S).
+
++detect_fire_uav1(data(N)) : my_number(N) <- !detected_fire(N).
++detect_fire_uav2(data(N)) : my_number(N) <- !detected_fire(N).
++detect_fire_uav3(data(N)) : my_number(N) <- !detected_fire(N).
++detect_fire_uav4(data(N)) : my_number(N) <- !detected_fire(N).
++detect_fire_uav5(data(N)) : my_number(N) <- !detected_fire(N).
++detect_fire_uav6(data(N)) : my_number(N) <- !detected_fire(N).
+
+//////////////// Start
 !start.
 
-//plans
 +!start
-    <- .print("Started!");
+    <- .wait(100);
+      .print("Started!");
+      !calculate_land_position;
       !calculate_area;
       !calculate_waypoints(1, []);
-      !generate_trajectory.
-      //!start_trajectory.
+      !follow_trajectory(4).
 
 
-// Calculating area
+//////////////// Calculating land position
++!calculate_land_position
+   :  my_number(N)
+      & land_point(LX, LY)
+      & land_radius(R)
+      & num_of_uavs(NumOfUavs)
+   <- .print("Calculating landing position");
+      -+status("calculating_land_position");
+      NumOfColumns = NumOfUavs/2;
+      RectangleHeight = R/2;
+      RectangleWidth = R/NumOfColumns;
+      My_landing_x = LX - R/2 + RectangleWidth/2 + ((N-1) mod NumOfColumns)*RectangleWidth;
+      My_landing_y = LY - R/2 + RectangleHeight/2 + (math.floor((N-1)/NumOfColumns))*RectangleHeight;
+      +my_landing_position(My_landing_x, My_landing_y).
+
+
+//////////////// Calculating area
 +!calculate_area
     :   my_number(N)
         & world_area(H, W, CX, CY)
         & num_of_uavs(NumOfUavs)
-    <-  +status("Calculating");
+    <-  .print("Calculating area"); 
+        +status("calculating_area");
         NumOfColumns = NumOfUavs/2;
         RectangleHeight = H/2;
         RectangleWidth = W/NumOfColumns;
         X1 = CX - W/2 + ((N-1) mod NumOfColumns)*RectangleWidth;
         X2 = CX - W/2 + ((N-1) mod NumOfColumns + 1)*RectangleWidth;
-        Y1 = -H/2 + (math.floor((N-1)/NumOfColumns))*RectangleHeight;
-        Y2 = -H/2 + (math.floor((N-1)/NumOfColumns) + 1)*RectangleHeight;
-        +my_area(X1, X2, Y1, Y2);
-        .print("Calculating area").
+        Y1 = CY - H/2 + (math.floor((N-1)/NumOfColumns))*RectangleHeight;
+        Y2 = CY - H/2 + (math.floor((N-1)/NumOfColumns) + 1)*RectangleHeight;
+        +my_area(X1, X2, Y1, Y2).
 
-// Calculating waypoints
+
+//////////////// Calculating waypoints
 +!calculate_waypoints(C, OldWayList)
     :   camera_range(CR)
         & my_area(X1, X2, Y1, Y2)
         & X2 - (C+2)*CR/2 >= X1
         & std_altitude(Z)
-    <-  Waypoints = [
+    <-  .print("Calculating waypoints");
+        -+status("calculating_waypoints");
+        Waypoints = [
                         [X1 + C*CR/2, Y1 + CR/2, Z]
                         , [X1 + C*CR/2, Y2 - CR/2, Z]
                         , [X1 + (C+2)*CR/2, Y2 - CR/2, Z]
                         , [X1 + (C+2)*CR/2, Y1 + CR/2, Z]
                     ];
         .concat(OldWayList, Waypoints, NewWayList);
-        .print("Calculating waypoints");
         !calculate_waypoints(C+4, NewWayList).
 
 +!calculate_waypoints(_, WayList)
     <-  .print("Finished calculating waypoints");
         +waypoints_list(WayList);
-        .print(WayList);
-        .wait(3000);
-        .print("Finished sleeping").
+        +waypoints_list_len(.length(WayList));
+        .print("Waypoints list: ", WayList).
 
-// Generating Trajectory
-+!generate_trajectory
-   :  waypoints_list(WayList)
-      & my_frame_id(Frame_id)
-      & input_id(II)
-      & use_heading(UH)
-      & fly_now(FN)
-      & stop_at_waypoints(SAW)
-      & loop(Loop)
-      & over_constraints(OC)
-      & over_max_velocity_hor(OMVH)
-      & over_max_acceleration_hor(OMAH)
-      & over_max_jerk_hor(OMJH)
-      & over_max_velocity_ver(OMVV)
-      & over_max_acceleration_ver(OMAV)
-      & over_max_jerk_ver(OMJV)
-      & relax_heading(RH)
-      & std_heading(Heading)
-      & my_number(N)
-   <- .print("generating_trajectory");
-      embedded.mas.bridges.jacamo.defaultEmbeddedInternalAction("roscore1","generate_trajectory", [N, 0, 0, 0, Frame_id, II, UH, FN, SAW, Loop, OC, OMVH, OMAH, OMJH, OMVV, OMAV, OMJV, RH, WayList, Heading]);
-      .wait(1000).
 
-// Go to trajectory start and start following trajectory
-+!start_trajectory
+//////////////// Follow trajectory
++!follow_trajectory(CW)
+   :  waypoints_list_len(CW)
+   <- +finished_trajectory(N).
+
++!follow_trajectory(CW)
+   :  waypoints_list(WL)
+      & waypoints_list_len(Len)
+      & CW < Len
+   <- -+status("following_trajectory");
+      .print("following_trajectory");
+      .nth(CW, WL, [X, Y, Z]);
+      !check_near(X, Y, Z, "waypoint");
+      !follow_trajectory(CW+1).
+
++finished_trajectory(N)
+   :  my_number(N)
+   <- -+status("finished_trajectory");
+      .print("finished_trajectory");
+      !wait_for_others.
+
+
+//////////////// Waiting
++!wait_for_others
+   :  my_number(N)
+      & my_landing_position(LX, LY)
+      & .count(finished_trajectory(_), C)
+      & num_of_uavs(C)
+   <- -+status("waiting");
+      .print("All finished, going to land position");
+      !goto_landing_position(LX, LY).
+
++!wait_for_others
+   <- -+status("waiting");
+      .print("Still waiting");
+      .wait(1000);
+      !wait_for_others.
+
+
+//////////////// Landing
++!goto_landing_position(X, Y)
+   : std_altitude(Z)
+   <- -+status("going_to_land_position");
+      !check_near(X, Y, Z, "land position");
+      !land.
+
++!land
    :  my_number_string(N)
-   <- -status(_);
-      +status("going_to_trajectory_start");
-      .print("Going to the start of the trajectory").
-//       embedded.mas.bridges.jacamo.defaultEmbeddedInternalAction("roscore1","goto_trajectory_start", [N]);
-//       .wait(10000);
-//       -status(_);
-//       +status("following_trajectory");
-//       .print("Started trajectory tracking");
-//       embedded.mas.bridges.jacamo.defaultEmbeddedInternalAction("roscore1","start_trajectory_tracking", [N]).
+   <- .print("Landing");
+      -+status("landing")
+      embedded.mas.bridges.jacamo.defaultEmbeddedInternalAction("roscore1", "land", [N]).
 
-// // Check if finished trajectory
-// +current_pos(CX, CY, CZ)
-//    :  status("following_trajectory")
-//       & waypoints_list[_|T]
-//       & [X, Y] = T
-//       & diff(D)
-//       & abs(CX - X) <= D
-//       & abs(CY - Y) <= D
-//    <- -status(_);
-//       +status("waiting");
-//       +finished_trajectory(true);
-//       .print("finished_trajectory");
-//       !wait_for_others.
 
-// // fire_found, go to fire area
-// +found_fire(X, Y)[source(UAV)]
-//    <- .print("Fire found by ", UAV);
-//       +fire_extinguished(X, Y, false);
-//       !stop_trajectory_tracking;
-//       !goto_fire(X, Y).
+//////////////// Fire Strategy
++detected_fire(N)
+   :  my_number(N)
+      & current_position(CX, CY, CZ)
+      & .intend(follow_trajectory(CW))
+      & not status("combating_fire")
+      & not fire_extinguished
+   <- .suspend(follow_trajectory(CW));
+      -+status("combating_fire");
+      .broadcast(tell, found_fire(N, CX, CY));
+      !goto_fire_position(CX, CY, N*10);
+      .wait(10000);
+      +fire_extinguished;
+      .resume(follow_trajectory(CW)).
 
-// // Stop trajectory
-// +!stop_trajectory_tracking
-//    :  my_number_string(N)
-//    <- -status(_);
-//       +status("stopped_trajectory");
-//       .print("Stoping trajectory tracking");
-//       embedded.mas.bridges.jacamo.defaultEmbeddedInternalAction("roscore1","stop_trajectory_tracking", [N]).
++detected_fire(N)
+   :  my_number(N)
+      & current_position(CX, CY, CZ)
+      & .intend(wait_for_others)
+      & not status("combating_fire")
+      & not fire_extinguished
+   <- .suspend(wait_for_others);
+      -+status("combating_fire");
+      .broadcast(tell, found_fire(N, CX, CY));
+      !goto_fire_position(CX, CY, N*10);
+      .wait(10000);
+      +fire_extinguished;
+      .resume(wait_for_others).
 
-// // go to fire area
-// +!goto_fire(X, Y)
-//    :  current_pos(CX, CY, _)
-//       & diff(D)
-//       & abs(CX - X) >= D
-//       & abs(CY - Y) >= D
-//       & current_header(Seq, Secs, Nsecs)
-//       & my_frame_id(Frame_id)
-//       & std_altitude(Z)
-//       & std_heading(Heading)
-//       & my_number_string(N)
-//    <- -status(_);
-//       +status("going_to_fire_area");
-//       .print("Going to the fire");
-//       embedded.mas.bridges.jacamo.defaultEmbeddedInternalAction("roscore1","goto_reference", [N, Seq, Secs, Nsecs, Frame_id, X, Y, Z, Heading]).
-//       !goto_fire(X, Y).
++found_fire(N, CX, CY)
+   : not my_number(N)
+      & current_position(CX, CY, CZ)
+      & .intend(follow_trajectory(CW))
+      & not status("combating_fire")
+      & not fire_extinguished
+   <- .suspend(follow_trajectory(CW));
+      -+status("combating_fire");
+      !goto_fire_position(CX+N, CY, N*10);
+      .wait(10000);
+      +fire_extinguished;
+      .resume(follow_trajectory(CW)).
 
-// +!goto_fire(X, Y)
-//    :  current_pos(CX, CY, _)
-//       & diff(D)
-//       & abs(CX - X) < D
-//       & abs(CY - Y) < D
-//    <- -status(_);
-//       +status("arrived_at_fire_area");
-//       .print("Arrived the fire");
-//       !extinguish_fire.
++found_fire(N, CX, CY)
+   : not my_number(N)
+      & current_position(CX, CY, CZ)
+      & .intend(wait_for_others)
+      & not status("combating_fire")
+      & not fire_extinguished
+   <- .suspend(wait_for_others);
+      -+status("combating_fire");
+      !goto_fire_position(CX+N, CY, N*10);
+      .wait(10000);
+      +fire_extinguished;
+      .resume(wait_for_others).
 
-// +!extinguish_fire
-//    : fire_extinguished(X, Y, false)
-//    <- .print("Extinguishing fire");
-//       //call service;
-//       !extinguish_fire.
++!goto_fire_position(X, Y, Z)
+   :  my_number(N)
+   <- !check_near(X, Y, Z, "fire position").
 
-// +!extinguish_fire
-//    : fire_extinguished(X, Y, true)
-//    <- .print("Extinguishing fire");
-//       //call service;
-//       !fire_extinguished(X, Y).
 
-// +!fire_extinguished(X, Y)
-//    :  finished_trajectory(FT)
-//       & all_finished(AF)
-//       & land_position(LX, LY)
-//    <- .print("Fire extinguished");
-//       .print("Going to land position");
-//       !goto_landing_position(LX, LY).
+//////////////// Check Near
++!check_near(X, Y, Z, S)
+   :  near(X, Y)
+   <- .print("Arrived at ", S).
 
-// +fire_extinguished(X, Y)
-//    :  finished_trajectory(FT)
-//    <- .print("Fire extinguished");
-//       .print("Going to land position");
-//       !wait_for_others.
++!check_near(X, Y, Z, S)
+   :  my_number_string(N)
+      & std_heading(Heading)
+   <- embedded.mas.bridges.jacamo.defaultEmbeddedInternalAction("roscore1","goto", [N, X, Y, Z, Heading]);
+      .wait(200);
+      !check_near(X, Y, Z, S).
 
-// +fire_extinguished(X, Y)
-//    <- .print("Fire extinguished");
-//       .print("Going to land position");
-//       !resume_trajectory_tracking(LX, LY).
 
-// +resume_trajectory_tracking
-//    :  my_number_string(N)
-//    <- -status(_);
-//       +status("following_trajectory");
-//       .print("Resuming trajectory tracking");
-//       embedded.mas.bridges.jacamo.defaultEmbeddedInternalAction("roscore1","resume_trajectory_tracking", [N]).
-
-// +!wait_for_others
-//    :  fire_found(X, Y)
-//    <- .print("Fire found by ", UAV);
-//       +fire_extinguished(X, Y, false);
-//       !goto_fire(X, Y).
-
-// +!wait_for_others
-//    :  finished_trajectory(true)
-//    <- .print("All finished, going to land position");
-//       !goto_landing_position(LX, LY).
-
-// +!goto_landing_position(X, Y)
-//    :  current_pos(CX, CY, _)
-//       & diff(D)
-//       & abs(CX - X) >= D
-//       & abs(CY - Y) >= D
-//    <- .print("Going to landing position");
-//       !goto_landing_position(X, Y).
-
-// +!goto_landing_position(X, Y)
-//    :  current_pos(CX, CY, _)
-//       & diff(D)
-//       & abs(CX - X) < D
-//       & abs(CY - Y) < D
-//    <- .print("Arrived at landing position");
-//       !land.
-
-// +!land
-//    :  my_number_string(N)
-//    <- .print("Landing");
-//       embedded.mas.bridges.jacamo.defaultEmbeddedInternalAction("roscore1","stop_trajectory_tracking", [N]).
+//////////////// Handling plan failure
++detected_fire(_).
++found_fire(_, _, _).   

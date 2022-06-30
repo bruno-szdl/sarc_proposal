@@ -20,8 +20,41 @@ mas perception_action {
     // }
     agent uav1 : uav.asl {
         beliefs: my_number(1)
-                my_number_string("1")
-                my_frame_id("uav1/gps_origin")
+
+        ag-class: DemoEmbeddedAgentROS
+        ag-arch: DemoEmbeddedAgentArch
+    }
+
+    agent uav2 : uav.asl {
+        beliefs: my_number(2)
+
+        ag-class: DemoEmbeddedAgentROS
+        ag-arch: DemoEmbeddedAgentArch
+    }
+
+    agent uav3 : uav.asl {
+        beliefs: my_number(3)
+
+        ag-class: DemoEmbeddedAgentROS
+        ag-arch: DemoEmbeddedAgentArch
+    }
+
+    agent uav4 : uav.asl {
+        beliefs: my_number(4)
+
+        ag-class: DemoEmbeddedAgentROS
+        ag-arch: DemoEmbeddedAgentArch
+    }
+
+    agent uav5 : uav.asl {
+        beliefs: my_number(5)
+
+        ag-class: DemoEmbeddedAgentROS
+        ag-arch: DemoEmbeddedAgentArch
+    }
+
+    agent uav6 : uav.asl {
+        beliefs: my_number(6)
 
         ag-class: DemoEmbeddedAgentROS
         ag-arch: DemoEmbeddedAgentArch
