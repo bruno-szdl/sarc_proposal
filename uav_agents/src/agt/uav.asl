@@ -7,7 +7,7 @@ std_altitude(20.0).
 std_heading(0.0).
 land_point(-102.0, -111.0).
 land_radius(10.0).
-diff(2).
+diff(1).
 
 
 //////////////// Rules
@@ -41,7 +41,7 @@ my_number_string(S) :- my_number(N)
       !calculate_land_position;
       !calculate_area;
       !calculate_waypoints(1, []);
-      !follow_trajectory(4).
+      !follow_trajectory(0).
 
 
 //////////////// Calculating land position
